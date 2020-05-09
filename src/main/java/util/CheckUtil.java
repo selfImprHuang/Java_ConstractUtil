@@ -75,7 +75,7 @@ public class CheckUtil {
         return !Modifier.isAbstract(aClass.getModifiers()) && !Modifier.isInterface(aClass.getModifiers());
     }
 
-    public static <T> boolean CheckType(T origin, T target) {
+    public static <T> boolean checkType(T origin, T target) {
         return origin.getClass() == target.getClass();
     }
 }

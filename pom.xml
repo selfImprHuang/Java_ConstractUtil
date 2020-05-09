@@ -28,7 +28,6 @@
         <javax.version>7.0</javax.version>
         <junit.version>4.11</junit.version>
         <javax.servlet.version>3.0</javax.servlet.version>
-        <log4j.version>2.3</log4j.version>
         <slf4j.version>1.7.12</slf4j.version>
         <org.aspectj.version>1.6.2</org.aspectj.version>
         <net.sf.ehcache.version>2.3.2</net.sf.ehcache.version>
@@ -60,14 +59,6 @@
             <artifactId>guava</artifactId>
             <version>28.2-jre</version>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/log4j/log4j -->
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
-        </dependency>
-
 
         <!--引入reflectASM包-->
         <dependency>

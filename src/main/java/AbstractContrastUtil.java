@@ -3,10 +3,6 @@ import com.esotericsoftware.reflectasm.MethodAccess;
 import com.google.common.collect.Lists;
 import exception.NoSetMethodException;
 import exception.TypeMisMatchException;
-import handler.CollectionHandler;
-import handler.MapHandler;
-import handler.OriginHandler;
-import handler.SelfHandler;
 import util.CheckUtil;
 import util.ClassUtil;
 
@@ -21,12 +17,9 @@ import static constant.Constant.SET;
 
 /**
  * @author 志军
- * @description 通用的对象比较基本实现类
- * @date 2020-1-5 16:00:00
+ * @description 简单的对象比较工具的实现示例
  */
-class ContrastUtil {
-
-
+public abstract class AbstractContrastUtil<T> {
     /**
      * get方法的缓存Map
      */
@@ -38,15 +31,54 @@ class ContrastUtil {
     private static ConcurrentHashMap<String, List<String>> setMethodCache = new ConcurrentHashMap<>();
 
     /**
-     * 单对象对比
-     *
-     * @param origin 原始对象
-     * @param target 修改后的对象
-     * @param <T>    对象类型
-     * @return 对比结果
+     * 基本类型的比较方法
      */
+    abstract Boolean originContract(Object originChange, Object targetChange, Object originValue, Object targetValue, MethodAccess methodAccess, String setName);
+
+    /**
+     * 自定义类型的比较方法
+     */
+    abstract boolean selfContract(Object originChange, Object targetChange, Object originValue, Object targetValue, MethodAccess methodAccess, String setName);
+
+    /**
+     * map类型的比较方法
+     */
+    abstract boolean mapContract(Object originChange, Object targetChange, Object originValue, Object targetValue, MethodAccess methodAccess, String setName) throws InstantiationException, IllegalAccessException;
+
+    /**
+     * 集合类型比较方法
+     */
+    abstract boolean collectionContract(Object originChange, Object targetChange, Object originValue, Object targetValue, MethodAccess methodAccess, String setName) throws InstantiationException, IllegalAccessException;
+
+    /**
+     * 特殊类型的处理规则
+     */
+    abstract boolean specialContract(Object originChange, Object targetChange, Object originValue, Object targetValue, MethodAccess methodAccess, String setName);
+
+    /**
+     * 判断是不是特殊类型
+     */
+    abstract boolean isSpecialType(Object originValue, Object targetValue);
+
+
+    /**
+     * 入参都为空的处理
+     */
+    abstract <T> ContrastObject<T> nullProcessor(T origin, T target);
+
+    /**
+     * 入参为基本类型的处理
+     */
+    abstract <T> ContrastObject<T> originProcessor(T origin, T target);
+
+    /**
+     * 组装对象比较出参
+     */
+    abstract <T> ContrastObject<T> setContrastObject(T origin, T target, T originChange, T targetChange);
+
+
     @SuppressWarnings("unchecked")
-    static <T> ContrastObject<T> contrast(T origin, T target) throws IllegalAccessException, InstantiationException {
+    public <T> ContrastObject<T> contrast(T origin, T target) throws Exception {
         //空的情况的判断
         if (origin == null || target == null) {
             return nullProcessor(origin, target);
@@ -88,30 +120,9 @@ class ContrastUtil {
         return setContrastObject(origin, target, originChange, targetChange);
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> ContrastObject<T> originProcessor(T origin, T target) {
-        if (origin == target) {
-            return null;
-        }
-        return new ContrastObject(origin, target, origin, target);
-    }
 
-    private static <T> ContrastObject<T> nullProcessor(T origin, T target) {
-        if (origin == null && target == null) {
-            return null;
-        }
-
-        if (origin == null) {
-            return setContrastObject(null, target, null, target);
-        }
-
-        return setContrastObject(origin, null, origin, null);
-    }
-
-    private static <T> boolean forContrast(List<String> getList, MethodAccess methodAccess, T origin, T target, List<String> setList,
-                                           T originChange, T targetChange) throws InstantiationException,
-            IllegalAccessException {
-
+    private <T> boolean forContrast(List<String> getList, MethodAccess methodAccess, T origin, T target, List<String> setList,
+                                    T originChange, T targetChange) throws Exception {
         boolean changed = false;
         for (String methodName : getList) {
             boolean nowResult;
@@ -139,45 +150,51 @@ class ContrastUtil {
         return changed;
     }
 
-    private static <T> ContrastObject<T> setContrastObject(T origin, T target, T originChange, T targetChange) {
-        ContrastObject<T> contrastObject = new ContrastObject<>();
-        contrastObject.setOrigin(origin);
-        contrastObject.setTarget(target);
-        contrastObject.setOriginChange(originChange);
-        contrastObject.setTargetChange(targetChange);
-        return contrastObject;
-    }
 
-    /**
-     * @param originValue  get方法拿到的原始的值
-     * @param targetValue  get方法拿到的变化的值
-     * @param originChange 新创建的原始变化对象
-     * @param targetChange 新创建的改变变化对象
-     * @param methodAccess reflectASM类
-     * @param setName      set方法名
-     * @throws IllegalAccessException 异常
-     * @throws InstantiationException 异常
-     */
-    private static boolean contrastValue(Object originValue, Object targetValue, Object originChange, Object targetChange,
-                                         MethodAccess methodAccess, String setName) throws IllegalAccessException, InstantiationException {
+    private boolean contrastValue(Object originValue, Object targetValue, Object originChange, Object targetChange,
+                                  MethodAccess methodAccess, String setName) throws Exception {
+        //特殊拦截类型的处理
+        if (isSpecialType(originValue, targetValue)) {
+            return specialContract(originChange, targetChange, originValue, targetValue, methodAccess, setName);
+        }
+
         //处理Collection
         if (originValue instanceof Collection || targetValue instanceof Collection) {
-            return CollectionHandler.contract(originChange, targetChange, originValue, targetValue, methodAccess, setName);
+            return collectionContract(originChange, targetChange, originValue, targetValue, methodAccess, setName);
         }
 
         //Map的处理
         if (originValue instanceof Map || targetValue instanceof Map) {
-            return MapHandler.putValue(originChange, targetChange, originValue, targetValue, methodAccess, setName);
+            return mapContract(originChange, targetChange, originValue, targetValue, methodAccess, setName);
         }
 
         //非自定义类的处理
-        Boolean result = OriginHandler.contract(originChange, targetChange, originValue, targetValue, methodAccess, setName);
+        Boolean result = originContract(originChange, targetChange, originValue, targetValue, methodAccess, setName);
         if (null != result) {
             return result;
         }
 
         //自定义类型的处理
-        return SelfHandler.contract(originChange, targetChange, originValue, targetValue, methodAccess, setName);
+        return selfContract(originChange, targetChange, originValue, targetValue, methodAccess, setName);
+    }
+
+    /**
+     * 获取Set方法集合
+     *
+     * @param methodAccess MethodAccess
+     * @param tClass       类.class
+     * @param <T>          T
+     * @return 方法名
+     */
+    private static <T> List<String> getGetMethod(MethodAccess methodAccess, Class<T> tClass) {
+        if (getMethodCache.get(tClass.getName()) != null) {
+            return getMethodCache.get(tClass.getName());
+        }
+        List<String> methodNameList = Lists.newArrayList();
+        String[] methodNames = methodAccess.getMethodNames();
+        List<Method> methods = ClassUtil.getAllMethodWithSuper(tClass);
+
+        return buildMethodList(GET, methodNames, methods, methodNameList, getMethodCache, tClass);
     }
 
 
@@ -200,6 +217,7 @@ class ContrastUtil {
         return buildMethodList(SET, methodNames, methods, methodNameList, setMethodCache, tClass);
     }
 
+
     private static <T> List<String> buildMethodList(String type, String[] methodNames, List<Method> methods, List<String> methodNameList,
                                                     ConcurrentHashMap<String, List<String>> methodCache, Class<T> tClass) {
         for (String methodName : methodNames) {
@@ -216,22 +234,4 @@ class ContrastUtil {
         return methodNameList;
     }
 
-    /**
-     * 获取Set方法集合
-     *
-     * @param methodAccess MethodAccess
-     * @param tClass       类.class
-     * @param <T>          T
-     * @return 方法名
-     */
-    private static <T> List<String> getGetMethod(MethodAccess methodAccess, Class<T> tClass) {
-        if (getMethodCache.get(tClass.getName()) != null) {
-            return getMethodCache.get(tClass.getName());
-        }
-        List<String> methodNameList = Lists.newArrayList();
-        String[] methodNames = methodAccess.getMethodNames();
-        List<Method> methods = ClassUtil.getAllMethodWithSuper(tClass);
-
-        return buildMethodList(GET, methodNames, methods, methodNameList, getMethodCache, tClass);
-    }
 }

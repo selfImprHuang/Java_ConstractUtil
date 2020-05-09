@@ -4,7 +4,7 @@ import java.util.Objects;
 
 /**
  * 返回的对比对象的包装
- *
+ * @author 志军
  */
 public class ContrastObject<T> {
 
@@ -30,6 +30,15 @@ public class ContrastObject<T> {
      */
     private T targetChange;
 
+    public ContrastObject() {
+    }
+
+    public ContrastObject(T origin, T target, T originChange, T targetChange) {
+        this.origin = origin;
+        this.target = target;
+        this.originChange = originChange;
+        this.targetChange = targetChange;
+    }
 
     public T getOrigin() {
         return origin;
@@ -65,13 +74,17 @@ public class ContrastObject<T> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         ContrastObject<?> that = (ContrastObject<?>) o;
         return getOrigin().equals(that.getOrigin()) &&
-            getTarget().equals(that.getTarget()) &&
-            getOriginChange().equals(that.getOriginChange()) &&
-            getTargetChange().equals(that.getTargetChange());
+                getTarget().equals(that.getTarget()) &&
+                getOriginChange().equals(that.getOriginChange()) &&
+                getTargetChange().equals(that.getTargetChange());
     }
 
     @Override

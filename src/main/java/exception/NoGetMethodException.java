@@ -1,5 +1,7 @@
 package exception;
-
+/**
+ * @author 志军
+ */
 public class NoGetMethodException  extends  RuntimeException{
 
     public NoGetMethodException() {

@@ -1,5 +1,8 @@
 package exception;
 
+/**
+ * @author 志军
+ */
 public class TypeMisMatchException extends RuntimeException {
 
     public TypeMisMatchException() {

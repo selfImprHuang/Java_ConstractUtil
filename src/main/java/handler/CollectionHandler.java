@@ -33,14 +33,17 @@ public class CollectionHandler {
      */
     public static Boolean contract(Object originChange, Object targetChange, Object originValue, Object targetValue,
                                    MethodAccess methodAccess, String setName) throws IllegalAccessException, InstantiationException {
-
         boolean changed;
-        Class returnValue = originValue.getClass();
-
-        //判断Collection是否相等
-        if (CollectionUtils.isEqualCollection((Collection) originValue, (Collection) targetValue)) {
+        if (originValue == null && targetValue == null) {
             return false;
         }
+        //判断Collection是否相等
+        boolean isCollectionEquals = (originValue != null && targetValue != null) && CollectionUtils.isEqualCollection((Collection) originValue, (Collection) targetValue);
+        if (isCollectionEquals) {
+            return false;
+        }
+
+        Class returnValue = originValue == null ? targetValue.getClass() : originValue.getClass();
 
         Object originCollection = CollectionUtil.buildDiffCollection(originValue, targetValue, returnValue);
         Object changeCollection = CollectionUtil.buildDiffCollection(targetValue, originValue, returnValue);

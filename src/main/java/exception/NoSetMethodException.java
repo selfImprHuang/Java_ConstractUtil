@@ -1,5 +1,7 @@
 package exception;
-
+/**
+ * @author 志军
+ */
 public class NoSetMethodException extends RuntimeException {
 
     public NoSetMethodException() {

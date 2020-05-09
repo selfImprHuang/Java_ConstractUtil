@@ -24,6 +24,11 @@ public class MapHandler {
     @SuppressWarnings("unchecked")
     public static boolean putValue(Object originChange, Object targetChange, Object originValue, Object targetValue,
                                    MethodAccess methodAccess, String setName) throws IllegalAccessException, InstantiationException {
+
+        //这边也只处理只有一个map可能为空的情况，全部为空在前面的方法做了处理
+        if (SelfHandler.isOneNull(originChange, originChange, targetValue, originValue, methodAccess, setName)) {
+            return true;
+        }
         //参数前置
         boolean changed = false;
         Set<Map.Entry> originEntry = ((Map) originValue).entrySet();
@@ -35,9 +40,11 @@ public class MapHandler {
         for (Map.Entry entry : originEntry) {
             Object key = entry.getKey();
             for (Map.Entry tEntry : targetEntry) {
+                boolean hasChange;
                 if (tEntry.getKey().equals(key)) {
                     //每一个key都进行比较,如果key相等则比较对应的value，这个value需要重写hashcode和equals方法
-                    changed = changed || MapHandler.putValue(originChange, targetChange, originMap, targetMap, key);
+                    hasChange = MapHandler.putValue(entry.getValue(), tEntry.getValue(), originMap, targetMap, key);
+                    changed = changed || hasChange;
                     break;
                 }
             }
@@ -47,7 +54,7 @@ public class MapHandler {
         List<Map.Entry> originList = SetUtil.findUnLikeValue(originEntry, targetEntry);
         List<Map.Entry> changeList = SetUtil.findUnLikeValue(originEntry, targetEntry);
         //计算changed的值
-        changed = changed || !CollectionUtils.isEmpty(originList) || CollectionUtils.isEmpty(changeList);
+        changed = changed || !CollectionUtils.isEmpty(originList) || !CollectionUtils.isEmpty(changeList);
         //把不一致的值设置会新的Map中
         MapUtil.putIfNotEmpty(originMap, originList);
         MapUtil.putIfNotEmpty(targetMap, changeList);
@@ -57,13 +64,13 @@ public class MapHandler {
         return changed;
     }
 
-    private static boolean putValue(Object originChange, Object targetChange, Map<Object, Object> originMap,
+    private static boolean putValue(Object value, Object tValue, Map<Object, Object> originMap,
                                     Map<Object, Object> targetMap, Object key) {
-        if (originChange.equals(targetChange)) {
+        if (value.equals(tValue)) {
             return false;
         }
-        originMap.put(key, originChange);
-        targetMap.put(key, targetChange);
+        originMap.put(key, value);
+        targetMap.put(key, tValue);
         return true;
     }
 }
